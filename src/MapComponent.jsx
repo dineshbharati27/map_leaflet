@@ -67,6 +67,35 @@ const MapComponent = () => {
     }
   };
 
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+  
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setCoordinates((prev) => ({ ...prev, from: { lat: latitude, lng: longitude } }));
+  
+        try {
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const address = response.data.display_name;
+          setLocations((prev) => ({ ...prev, from: address }));
+        } catch (error) {
+          console.error("Error getting address:", error);
+        }
+      },
+      (error) => {
+        alert("Unable to retrieve location.");
+        console.error("Geolocation error:", error);
+      }
+    );
+  };
+  
+
   useEffect(() => {
     if (coordinates.from && coordinates.to && mapInstance) {
       if (routingControl) {
@@ -145,11 +174,13 @@ const MapComponent = () => {
     <div className="app-container">
       <h2>Enter Locations</h2>
       <div className="input-container">
-        <input type="text" name="from" placeholder="From (Your location)" value={locations.from} onChange={handleInputChange} />
+        <button onClick={getCurrentLocation}>📍 Use My Location</button>
+        <input type="text" name="from" placeholder="From (Your location)" value={locations.from} onChange={handleInputChange} /> 
         <button onClick={handleSwitch} className="switch-button">↔</button>
         <input type="text" name="to" placeholder="To (Your destination)" value={locations.to} onChange={handleInputChange} />
         <button onClick={handleSearch}>Search</button>
       </div>
+
 
       {distance !== null && (
         <p className="distance-text">Total Distance: {distance} km</p>
